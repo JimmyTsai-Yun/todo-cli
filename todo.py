@@ -23,6 +23,16 @@ def save_todos(todos):
         json.dump(todos, f, indent=2, ensure_ascii=False)
 
 
+def cmd_list(args):
+    todos = load_todos()
+    if not todos:
+        print("No tasks yet. Use `todo add` to create one.")
+        return
+    for t in todos:
+        status = "✓" if t["done"] else "○"
+        print(f"  {status} #{t['id']}  {t['task']}")
+
+
 def cmd_add(args):
     todos = load_todos()
     new_id = max((t["id"] for t in todos), default=0) + 1
@@ -46,6 +56,9 @@ def main():
 
     subparsers = parser.add_subparsers(dest="command", metavar="<command>")
     subparsers.required = False
+
+    # list
+    subparsers.add_parser("list", help="List all tasks").set_defaults(func=cmd_list)
 
     # add
     p_add = subparsers.add_parser("add", help="Add a new task")
