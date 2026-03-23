@@ -19,3 +19,9 @@ env/
 .vscode/
 .idea/
 *.swp
+
+# Claude Code
+.claude/
+
+# Tool caches
+.ruff_cache/
