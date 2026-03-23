@@ -63,6 +63,34 @@ def cmd_list(args):
         print(f"  {status} #{t['id']}  {t['task']}")
 
 
+def cmd_done(args):
+    todos = load_todos()
+    for i, t in enumerate(todos):
+        missing = [f for f in ("id", "task", "done") if f not in t]
+        if missing:
+            print(
+                f"Warning: Entry {i} in {DATA_FILE} is missing fields {missing}, skipped.",
+                file=sys.stderr,
+            )
+            continue
+        if not isinstance(t["id"], int):
+            print(
+                f"Warning: Entry {i} in {DATA_FILE} has non-integer id {t['id']!r}, skipped.",
+                file=sys.stderr,
+            )
+            continue
+        if t["id"] == args.id:
+            if t["done"]:
+                print(f"#{args.id} is already done.", file=sys.stderr)
+                sys.exit(2)
+            t["done"] = True
+            save_todos(todos)
+            print(f"Done #{args.id}: {t['task']}")
+            return
+    print(f"Error: task #{args.id} not found.", file=sys.stderr)
+    sys.exit(1)
+
+
 def cmd_add(args):
     todos = load_todos()
     new_id = max((t["id"] for t in todos), default=0) + 1
@@ -89,6 +117,11 @@ def main():
 
     # list
     subparsers.add_parser("list", help="List all tasks").set_defaults(func=cmd_list)
+
+    # done
+    p_done = subparsers.add_parser("done", help="Mark a task as done")
+    p_done.add_argument("id", type=int, help="Task id")
+    p_done.set_defaults(func=cmd_done)
 
     # add
     p_add = subparsers.add_parser("add", help="Add a new task")
