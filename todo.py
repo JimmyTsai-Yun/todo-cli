@@ -6,6 +6,7 @@ todo - A simple command-line todo list manager.
 import argparse
 import json
 import os
+import sys
 from datetime import datetime
 
 DATA_FILE = os.path.expanduser("~/.todo.json")
@@ -14,13 +15,35 @@ DATA_FILE = os.path.expanduser("~/.todo.json")
 def load_todos():
     if not os.path.exists(DATA_FILE):
         return []
-    with open(DATA_FILE) as f:
-        return json.load(f)
+    try:
+        with open(DATA_FILE, encoding="utf-8") as f:
+            return json.load(f)
+    except json.JSONDecodeError as e:
+        print(
+            f"Error: {DATA_FILE} is corrupted and could not be read.\n"
+            f"  Detail: {e}\n"
+            f"  To recover, inspect or delete {DATA_FILE} and re-add your tasks.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+    except OSError as e:
+        print(
+            f"Error: Could not read {DATA_FILE}: {e.strerror}.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
 
 
 def save_todos(todos):
-    with open(DATA_FILE, "w") as f:
-        json.dump(todos, f, indent=2, ensure_ascii=False)
+    try:
+        with open(DATA_FILE, "w", encoding="utf-8") as f:
+            json.dump(todos, f, indent=2, ensure_ascii=False)
+    except OSError as e:
+        print(
+            f"Error: Could not write to {DATA_FILE}: {e.strerror}.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
 
 
 def cmd_list(args):
@@ -28,7 +51,14 @@ def cmd_list(args):
     if not todos:
         print("No tasks yet. Use `todo add` to create one.")
         return
-    for t in todos:
+    for i, t in enumerate(todos):
+        missing = [f for f in ("id", "task", "done") if f not in t]
+        if missing:
+            print(
+                f"Warning: Entry {i} in {DATA_FILE} is missing fields {missing}, skipped.",
+                file=sys.stderr,
+            )
+            continue
         status = "✓" if t["done"] else "○"
         print(f"  {status} #{t['id']}  {t['task']}")
 
