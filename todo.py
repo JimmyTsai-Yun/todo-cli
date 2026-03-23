@@ -91,6 +91,41 @@ def cmd_done(args):
     sys.exit(1)
 
 
+def cmd_delete(args):
+    todos = load_todos()
+    target_was_corrupt = False
+    for i, t in enumerate(todos):
+        missing = [f for f in ("id", "task", "done") if f not in t]
+        if missing:
+            print(
+                f"Warning: Entry {i} in {DATA_FILE} is missing fields {missing}, skipped.",
+                file=sys.stderr,
+            )
+            if "id" not in missing and t.get("id") == args.id:
+                target_was_corrupt = True
+            continue
+        if not isinstance(t["id"], int):
+            print(
+                f"Warning: Entry {i} in {DATA_FILE} has non-integer id {t['id']!r}, skipped.",
+                file=sys.stderr,
+            )
+            continue
+        if t["id"] == args.id:
+            todos.pop(i)
+            save_todos(todos)
+            print(f"Deleted #{args.id}: {t['task']}")
+            return
+    if target_was_corrupt:
+        print(
+            f"Error: task #{args.id} exists in {DATA_FILE} but its entry is corrupt. "
+            f"Inspect or manually edit {DATA_FILE} to remove it.",
+            file=sys.stderr,
+        )
+    else:
+        print(f"Error: task #{args.id} not found.", file=sys.stderr)
+    sys.exit(1)
+
+
 def cmd_add(args):
     todos = load_todos()
     new_id = max((t["id"] for t in todos), default=0) + 1
@@ -122,6 +157,11 @@ def main():
     p_done = subparsers.add_parser("done", help="Mark a task as done")
     p_done.add_argument("id", type=int, help="Task id")
     p_done.set_defaults(func=cmd_done)
+
+    # delete
+    p_delete = subparsers.add_parser("delete", help="Delete a task")
+    p_delete.add_argument("id", type=int, help="Task id")
+    p_delete.set_defaults(func=cmd_delete)
 
     # add
     p_add = subparsers.add_parser("add", help="Add a new task")
