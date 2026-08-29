@@ -91,6 +91,13 @@ def cmd_done(args):
     sys.exit(1)
 
 
+def cmd_count(args):
+    todos = load_todos()
+    total = len(todos)
+    done = sum(1 for t in todos if t.get("done"))
+    print(f"{done}/{total} tasks done")
+
+
 def cmd_delete(args):
     todos = load_todos()
     target_was_corrupt = False
@@ -157,6 +164,9 @@ def main():
     p_done = subparsers.add_parser("done", help="Mark a task as done")
     p_done.add_argument("id", type=int, help="Task id")
     p_done.set_defaults(func=cmd_done)
+
+    # count
+    subparsers.add_parser("count", help="Show task counts").set_defaults(func=cmd_count)
 
     # delete
     p_delete = subparsers.add_parser("delete", help="Delete a task")
